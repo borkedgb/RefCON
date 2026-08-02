@@ -232,9 +232,12 @@ class BanDialog(simpledialog.Dialog):
 
     def validate(self):
         try:
-            int(self.duration_entry.get().strip())
+            duration = int(self.duration_entry.get().strip())
         except ValueError:
             messagebox.showerror("Ban via RCon", "Duration must be a whole number of minutes.")
+            return False
+        if duration < 0:
+            messagebox.showerror("Ban via RCon", "Duration must be 0 (permanent) or a positive number of minutes.")
             return False
         return True
 
@@ -542,13 +545,14 @@ def main():
     nickname_entry.bind("<FocusOut>", on_nickname_change)
     nickname_entry.bind("<Return>", on_nickname_change)
 
-    def rcon_creds():
-        """also saves whatever's currently typed in the port/password fields"""
+    def rcon_creds(persist=True):
+        """persist=False for the auto-refresh tick, so it can't save a still-being-edited field over a working password"""
         port = int(port_entry.get().strip())
         password = password_entry.get()
-        servers[current_host]["port"] = port_entry.get().strip()
-        servers[current_host]["password"] = password
-        servers_module.save(servers)
+        if persist:
+            servers[current_host]["port"] = port_entry.get().strip()
+            servers[current_host]["password"] = password
+            servers_module.save(servers)
         return current_host, port, password
 
     rcon_queue = queue.Queue()
@@ -572,7 +576,7 @@ def main():
                 messagebox.showerror("RCon", "No server selected, drop a log first.")
             return
         try:
-            host, port, password = rcon_creds()
+            host, port, password = rcon_creds(persist=not silent)
         except ValueError:
             if not silent:
                 messagebox.showerror("RCon", "Port must be a number.")
