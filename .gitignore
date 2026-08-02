@@ -1,0 +1,13 @@
+# Test/dev data
+data.json
+history.json
+rcon_config.json
+*.log
+
+# Python
+__pycache__/
+*.pyc
+
+# PyInstaller build output
+build/
+dist/
