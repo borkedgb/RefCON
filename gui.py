@@ -592,7 +592,7 @@ def main():
         threading.Thread(target=worker, daemon=True).start()
 
     # --- Ban via RCon ---
-    def ban_via_rcon(guid, names):
+    def ban_via_rcon(guid, names, player_num=None):
         if not guid or guid == "?":
             messagebox.showerror("RCon", "No BE GUID known for this row.")
             return
@@ -601,9 +601,13 @@ def main():
             return
         reason, duration = dialog.reason, dialog.duration
         duration_text = "permanent" if duration == 0 else f"{duration} minute(s)"
+        if player_num is not None:
+            command = f"ban {player_num} {duration} {reason}"
+        else:
+            command = f"addBan {guid} {duration} {reason}"
         if not messagebox.askyesno(
             "Confirm ban",
-            f"Send addBan for {names}\nGUID: {guid}\nDuration: {duration_text}\nReason: {reason}\n\n"
+            f"Send {command.split()[0]} for {names}\nGUID: {guid}\nDuration: {duration_text}\nReason: {reason}\n\n"
             "This bans them on the live server right now. Continue?",
         ):
             return
@@ -615,9 +619,9 @@ def main():
                 messagebox.showerror("RCon error", payload)
 
         status.config(text="Sending ban via RCon...")
-        run_rcon(f"addBan {guid} {duration} {reason}", on_done)
+        run_rcon(command, on_done)
 
-    def attach_player_context_menu(tree, headings=HEADINGS, guid_index=1, name_index=2):
+    def attach_player_context_menu(tree, headings=HEADINGS, guid_index=1, name_index=2, num_index=None):
         menu = tk.Menu(root, tearoff=0)
 
         def on_right_click(event):
@@ -631,14 +635,15 @@ def main():
                 menu.add_command(label=f"Copy {heading}", command=lambda v=value: copy_value(v))
             menu.add_separator()
             guid, names = values[guid_index], values[name_index]
-            menu.add_command(label="Ban via RCon...", command=lambda: ban_via_rcon(guid, names))
+            player_num = values[num_index] if num_index is not None else None
+            menu.add_command(label="Ban via RCon...", command=lambda: ban_via_rcon(guid, names, player_num))
             menu.post(event.x_root, event.y_root)
 
         tree.bind("<Button-3>", on_right_click)
 
     attach_player_context_menu(current_tree)
     attach_player_context_menu(historic_tree, HISTORIC_HEADINGS)
-    attach_player_context_menu(players_tree, PLAYERS_HEADINGS, guid_index=4, name_index=5)
+    attach_player_context_menu(players_tree, PLAYERS_HEADINGS, guid_index=4, name_index=5, num_index=0)
 
     def on_drop(event):
         nonlocal current_log_host, current_log_iids
