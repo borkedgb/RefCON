@@ -1,6 +1,6 @@
 # RefCON
 
-A lightweight, portable RCON tool for Arma Reforger. It talks to BattlEye's RCon (BERCON) so you can see who's connected, work your ban list, and send bans and unbans, all from one window instead of a raw RCon terminal. It also parses your server's console logs to catch players evading bans by reconnecting under a different account, which is where the tool started before it grew into full RCon management. Nothing about it phones home or sends your data anywhere else.
+A lightweight, portable RCON tool for Arma Reforger. It talks to BattlEye's RCon (BERCON) so you can see who's connected, work your ban list, and send bans and unbans, all from one window instead of a raw RCon terminal. It also parses your server's console logs to identify players evading bans by reconnecting under a different account, which is where the tool started before it grew into full RCon management. Nothing about it phones home or sends your data anywhere else.
 
 ![Historic Logs tab flagging two accounts that share an IP](images/screenshot.png)
 *Dummy data used for this screenshot.*
@@ -74,19 +74,21 @@ On any player row, right-click gives you a "Copy" option for every column plus "
 
 This is the feature the tool was originally built around, and it still drives the Current Log and Historic Logs tabs. The idea behind it: a PC ban sticks reasonably well, because a new Steam account means buying the game again. Console doesn't have that barrier. A new PSN or Xbox account costs nothing, so a banned player can be back on your server within minutes using the same console and a different account.
 
-The console log already has what you need to catch that: the account's persistent ID, its BE GUID, and the IP it connected from. Nobody reads a raw log by hand to find it, though, a busy server's log runs into thousands of lines and the useful bits are buried in engine noise. This tool parses it for you, tracks every account it has ever seen per server, and flags any pair of accounts that have connected from the same IP. Ban someone, and if they reconnect twenty minutes later under a new name from the same address, you'll see both rows highlighted next time you open the app, even if the two sessions were logged weeks apart.
+The console log already has what you need to catch that: the account's persistent ID, its BE GUID, and the IP it connected from. Nobody wants read a raw log by hand to find it, though, a busy server's log runs into thousands of lines and the useful bits are buried in engine noise. This tool parses it for you, tracks every account it has ever seen per server, and flags any pair of accounts that have connected from the same IP. Ban someone, and if they reconnect twenty minutes later under a new name from the same address, you'll see both rows highlighted next time you open the app, even if the two sessions were logged weeks apart.
 
 For every player it tracks: a BE player number, a persistent account ID (`identityId`, survives name changes), a BE GUID, a SteamID64 if they're on PC, every name they've played under, and every IP they've connected from.
 
-## BERCON, not Reforger's built-in RCON
+One thing to bare in mind here is sometimes multiple players will be connecting from the same network, and not always the same person. False positves are possible, but it's better than nothing in most cases.
+
+## BERCON, Reforger's built-in RCON
 
 Reforger runs two separate RCon-like systems, and this tool only speaks one of them. BattlEye's own RCon, BERCON, is configured in `BEServer_x64.cfg` on your server and is what BEC, BattleMetrics, and this tool all talk to. Reforger also has a newer, separate built-in RCON configured through `config.json`, with its own port and password. They share the same wire protocol underneath, but the two are set up independently, so the port and password from one will not work with the other. If you already run RCon tooling and aren't sure which one it uses, check whether its settings came from `BEServer_x64.cfg` or `config.json`, that tells you which system it's talking to.
 
 Your server needs BattlEye set up and running for any of this to work, if it isn't, there's no RCon to connect to. See [Arma Reforger: Server Hosting - BattlEye](https://community.bistudio.com/wiki/Arma_Reforger:Server_Hosting#BattlEye) for how to configure it.
 
-The BERCON client is implemented from scratch in `be_rcon.py`, using nothing but the Python standard library (`socket`, `struct`, `zlib`). No admin password ever goes through a third party.
+The BERCON client is implemented from scratch in `be_rcon.py`, using nothing but the Python standard library (`socket`, `struct`, `zlib`). No admin password ever goes through a third party, the connection is between you and your server only.
 
-When you drop a log, the app pulls the BERCON port and password straight out of it, servers log their own `RConPort` and `RConPassword` on startup, plus the host from the "Server registered with address" line. If your log doesn't happen to contain that line, or you'd rather not drop a log at all, use "+ Add Server" and type the details in yourself.
+When you drag and drop a log, the app pulls the BERCON port and password straight out of it, servers log their own `RConPort` and `RConPassword` on startup, plus the host from the "Server registered with address" line. If your log doesn't happen to contain that line, or you'd rather not drop a log at all, use "+ Add Server" and type the details in yourself.
 
 RCon commands run on a background thread, so an unreachable server or a dropped packet won't freeze the window while it waits.
 
