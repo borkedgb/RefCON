@@ -5,11 +5,30 @@ A lightweight, portable RCON tool for Arma Reforger. It talks to BattlEye's RCon
 ![Historic Logs tab flagging two accounts that share an IP](images/screenshot.png)
 *Dummy data used for this screenshot.*
 
+## Contents
+
+- [Download](#download)
+- [Requirements](#requirements)
+- [Running from source](#running-from-source)
+- [How the GUI is laid out](#how-the-gui-is-laid-out)
+  - [Servers](#servers)
+  - [Current Log](#current-log)
+  - [Historic Logs](#historic-logs)
+  - [Live Players](#live-players)
+  - [Ban List](#ban-list)
+  - [Filtering and sorting](#filtering-and-sorting)
+  - [Right-click menu](#right-click-menu)
+- [Alt detection](#alt-detection)
+- [BERCON, Reforger's built-in RCON](#bercon-reforgers-built-in-rcon)
+- [Where your data lives](#where-your-data-lives)
+- [Building a portable executable](#building-a-portable-executable)
+- [Licence](#licence)
+
 ## Download
 
 Grab `RefCON.exe` from the [Releases page](../../releases) and run it. No Python, no dependencies, nothing else to install. It's a single portable file, drop it anywhere and it'll write its own `data.json` next to itself.
 
-Everything below this point is for running or building it from source instead.
+Skip the next two sections unless you'd rather run it from source.
 
 ## Requirements
 
