@@ -32,9 +32,9 @@ HISTORIC_COLUMNS = COLUMNS + ("banned",)
 HISTORIC_HEADINGS = HEADINGS + ("Status",)
 HISTORIC_WIDTHS = WIDTHS + (70,)
 
-BAN_COLUMNS = ("num", "type", "target", "duration", "reason")
-BAN_HEADINGS = ("#", "Type", "Target", "Duration", "Reason")
-BAN_WIDTHS = (40, 60, 280, 100, 300)
+BAN_COLUMNS = ("num", "type", "target", "username", "duration", "reason")
+BAN_HEADINGS = ("#", "Type", "Target", "Username", "Duration", "Reason")
+BAN_WIDTHS = (40, 60, 280, 160, 100, 300)
 
 PLAYERS_COLUMNS = ("num", "ip", "port", "ping", "guid", "name", "status")
 PLAYERS_HEADINGS = ("#", "IP", "Port", "Ping", "GUID", "Name", "Status")
@@ -98,13 +98,20 @@ def build_rows(hist, iids, banned_guids=None):
             hist[iid]["be_guid"] or "?",
             ", ".join(hist[iid]["names"]),
             ", ".join(hist[iid]["ips"]),
-            iid,
+            hist[iid].get("identityId", iid) or "",
             ", ".join(sorted(history.alt_names(hist, iid))),
         )
         if banned_guids is not None:
             values += ("Banned" if hist[iid]["be_guid"] in banned_guids else "",)
         result.append((values, iid in flagged))
     return result
+
+
+def username_for_guid(identities, guid):
+    for entry in identities.values():
+        if entry["be_guid"] == guid:
+            return ", ".join(entry["names"])
+    return ""
 
 
 def matches_query(values, query):
@@ -153,7 +160,7 @@ def parse_bans(text):
 
 
 def parse_players(text, banned_guids=None):
-    """banned_guids flags anyone connected who's also banned, which shouldn't happen but does"""
+    """banned_guids flags anyone connected who's also banned, which shouldn't happen"""
     banned_guids = banned_guids or set()
     rows = []
     skipped = []
@@ -475,9 +482,12 @@ def main():
 
     def render_bans():
         rows = ban_rows_by_host.get(current_host, [])
+        identities = servers[current_host]["identities"] if current_host is not None else {}
         query = bans_search_entry.get()
         ban_tree.delete(*ban_tree.get_children())
-        for row in rows:
+        for num, kind, target, duration, reason in rows:
+            username = username_for_guid(identities, target) if kind == "GUID" else ""
+            row = (num, kind, target, username, duration, reason)
             if matches_query(row, query):
                 ban_tree.insert("", "end", values=row)
 
@@ -730,6 +740,10 @@ def main():
                 return
             rows, skipped = parse_players(payload, banned_guids_by_host.get(host))
             player_rows_by_host[host] = rows
+            if history.merge_live(servers[host]["identities"], rows):
+                servers_module.save(servers)
+                if host == current_host:
+                    refresh_historic()
             if host == current_host:
                 render_players()
             msg = f"Fetched {len(rows)} live player(s) from RCon"

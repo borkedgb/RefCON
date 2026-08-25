@@ -15,9 +15,10 @@ import argparse
 import csv
 import re
 
+#v1.8 added a trailing ", slots=N/M" here, made it optional so older logs still match
 RE_AUTHENTICATING = re.compile(
     r"ServerImpl event: authenticating \(identity=0x(?P<slot>[0-9a-fA-F]+), "
-    r"address=(?P<ip>[\d.]+):(?P<port>\d+)\)"
+    r"address=(?P<ip>[\d.]+):(?P<port>\d+)(?:, slots=\d+/\d+)?\)"
 )
 RE_AUTH = re.compile(
     r"Authenticated player: rplIdentity=0x(?P<slot>[0-9a-fA-F]+) "
@@ -188,7 +189,7 @@ def _selftest():
 16:28:17.589  DEFAULT      : BattlEye Server: 'Player #0 Alice (1.2.3.4:1000) connected'
 16:28:17.589  DEFAULT      : BattlEye Server: Setting GUID for player identity=0x00000000, GUID=76561198000000001
 16:28:17.589  DEFAULT      : BattlEye Server: 'Player #0 Alice - BE GUID: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
-16:34:34.800 RPL          : ServerImpl event: authenticating (identity=0x00000001, address=1.2.3.4:2000)
+16:34:34.800 RPL          : ServerImpl event: authenticating (identity=0x00000001, address=1.2.3.4:2000, slots=1/32)
 16:34:34.825 BACKEND      : Authenticated player: rplIdentity=0x00000001 identityId=bbbb-2222 name=Bob
 16:34:34.857  DEFAULT      : BattlEye Server: 'Player #1 Bob (1.2.3.4:2000) connected'
 16:34:34.857  DEFAULT      : BattlEye Server: Setting GUID for player identity=0x00000001, GUID=[u8; 64]

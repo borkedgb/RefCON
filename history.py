@@ -29,6 +29,37 @@ def merge(history, identities):
     return history
 
 
+def merge_live(history, player_rows):
+    """Keys entries by BE GUID since RCon never gives an identityId; returns whether anything changed."""
+    by_guid = {entry["be_guid"]: key for key, entry in history.items() if entry["be_guid"]}
+    changed = False
+    for num, ip, _port, _ping, guid, name, _status in player_rows:
+        key = by_guid.get(guid)
+        if key is None:
+            key = guid
+            history[key] = {
+                "identityId": None,
+                "entity_id": None,
+                "names": [],
+                "be_guid": guid,
+                "steam_id": None,
+                "ips": [],
+            }
+            by_guid[guid] = key
+            changed = True
+        entry = history[key]
+        if entry["entity_id"] != num:
+            entry["entity_id"] = num
+            changed = True
+        if name not in entry["names"]:
+            entry["names"].append(name)
+            changed = True
+        if ip not in entry["ips"]:
+            entry["ips"].append(ip)
+            changed = True
+    return changed
+
+
 def shared_ip_iids(history):
     by_ip = {}
     for iid, entry in history.items():
@@ -78,6 +109,19 @@ def _selftest():
     merge(hist, {"dddd": dave})
     assert hist["dddd"]["ips"] == ["5.5.5.5"]
     assert hist["dddd"]["names"] == ["Dave"]
+
+    live_hist = {}
+    row = ("2", "6.6.6.6", "2302", "20", "e" * 32, "Eve", "")
+    assert merge_live(live_hist, [row]) is True
+    assert live_hist["e" * 32] == {
+        "identityId": None,
+        "entity_id": "2",
+        "names": ["Eve"],
+        "be_guid": "e" * 32,
+        "steam_id": None,
+        "ips": ["6.6.6.6"],
+    }
+    assert merge_live(live_hist, [row]) is False  # same row again, nothing new to learn
 
     print("selftest OK")
 
