@@ -10,10 +10,16 @@ together in the same single log.
 def merge(history, identities):
     """Fold freshly-parsed altdetector.Identity objects into history, in place."""
     for ident in identities.values():
-        entry = history.setdefault(
-            ident.iid,
-            {"entity_id": None, "names": [], "be_guid": None, "steam_id": None, "ips": []},
-        )
+        entry = history.get(ident.iid)
+        if entry is None and ident.be_guid and ident.be_guid in history:
+            # live refreshes key unknown players by GUID; once a log gives us the
+            # real identityId, re-key that entry instead of duplicating it
+            entry = history.pop(ident.be_guid)
+            entry["identityId"] = ident.iid
+            history[ident.iid] = entry
+        if entry is None:
+            entry = {"entity_id": None, "names": [], "be_guid": None, "steam_id": None, "ips": []}
+            history[ident.iid] = entry
         for name in ident.names:
             if name not in entry["names"]:
                 entry["names"].append(name)
@@ -122,6 +128,17 @@ def _selftest():
         "ips": ["6.6.6.6"],
     }
     assert merge_live(live_hist, [row]) is False  # same row again, nothing new to learn
+
+    # a player seen live first used to end up in history twice once their log arrived
+    frank = Identity("ffff-6666")
+    frank.names = ["Frank"]
+    frank.be_guid = "e" * 32
+    frank.connections = [("7.7.7.7", "3333")]
+    merge(live_hist, {"ffff-6666": frank})
+    assert list(live_hist) == ["ffff-6666"]
+    assert live_hist["ffff-6666"]["identityId"] == "ffff-6666"
+    assert live_hist["ffff-6666"]["names"] == ["Eve", "Frank"]
+    assert live_hist["ffff-6666"]["ips"] == ["6.6.6.6", "7.7.7.7"]
 
     print("selftest OK")
 

@@ -57,8 +57,11 @@ def load():
 
 
 def save(servers):
-    with open(PATH, "w", encoding="utf-8") as f:
+    # write-then-rename so a crash mid-write can't truncate the only copy of the data
+    tmp = PATH + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
         json.dump(servers, f, indent=2)
+    os.replace(tmp, PATH)
 
 
 def get_or_create(servers, host):

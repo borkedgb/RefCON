@@ -893,7 +893,7 @@ Players on server:
     assert matches_query(row, "1.2.3.4") is True
     assert matches_query(row, "nobody") is False
 
-    # ban reason goes out exactly as typed; a blank one still bans but is recorded as "Reason not given"
+    # a blank reason must still ban, just logged as "Reason not given"
     def fake_dialog(reason, duration):
         d = BanDialog.__new__(BanDialog)
         d.reason_entry = type("E", (), {"get": staticmethod(lambda: reason)})()
