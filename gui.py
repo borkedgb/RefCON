@@ -227,7 +227,6 @@ class BanDialog(simpledialog.Dialog):
 
         tk.Label(master, text="Reason:").grid(row=1, column=0, sticky="e")
         self.reason_entry = tk.Entry(master, width=30)
-        self.reason_entry.insert(0, "Ban evasion")
         self.reason_entry.grid(row=1, column=1)
 
         tk.Label(master, text="Duration (minutes, 0 = permanent):").grid(row=2, column=0, sticky="e")
@@ -249,7 +248,7 @@ class BanDialog(simpledialog.Dialog):
         return True
 
     def apply(self):
-        self.reason = self.reason_entry.get().strip() or "Ban evasion"
+        self.reason = self.reason_entry.get().strip() or "Reason not given"
         self.duration = int(self.duration_entry.get().strip())
 
 
@@ -893,6 +892,23 @@ Players on server:
     assert matches_query(row, "ALICE") is True
     assert matches_query(row, "1.2.3.4") is True
     assert matches_query(row, "nobody") is False
+
+    # ban reason goes out exactly as typed; a blank one still bans but is recorded as "Reason not given"
+    def fake_dialog(reason, duration):
+        d = BanDialog.__new__(BanDialog)
+        d.reason_entry = type("E", (), {"get": staticmethod(lambda: reason)})()
+        d.duration_entry = type("E", (), {"get": staticmethod(lambda: duration)})()
+        return d
+
+    typed = fake_dialog("cheating", "0")
+    assert typed.validate() is True
+    typed.apply()
+    assert typed.reason == "cheating"
+
+    blank = fake_dialog("   ", "60")
+    assert blank.validate() is True
+    blank.apply()
+    assert blank.reason == "Reason not given"
 
     print("selftest OK")
 
